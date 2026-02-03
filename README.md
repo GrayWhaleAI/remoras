@@ -50,6 +50,20 @@ manager = GeniusManager(basic_auth=basic_auth, project_config=project_config)
 The `provided_username` and `provided_password` should be replaced with the actual username and password given to you
 during the hackathon.
 
+Both `BasicAuth` and `ProjectConfig` can load their information from a `.json` file via `load_from_file()`
+
+**Example**
+```python
+from genius import BasicAuth, ProjectConfig, GeniusManager
+
+basic_auth = BasicAuth().load_from_file("file_with_my_auth.json")
+project_config = ProjectConfig().load_from_file("file_with_my_project_info.json")
+
+manager = GeniusManager(basic_auth=basic_auth, project_config=project_config)
+```
+
+> Make sure your loaded file contains the same fields as the class. For `BasicAuth`: `username`, `password`, For `ProjectConfig`: `project_name`, `project_summary`, `hacker_email`.
+
 #### `token_config` : `TokenConfig`
 If we already have a database that exists and have a token for the project, as well as the project's name we
 can utilize the `TokenConfig` class.
@@ -61,6 +75,61 @@ from genius import GeniusManager, TokenConfig
 token_config = TokenConfig(project_name="MyCoolProject", token="supersecrettoken199999")
 manager = GeniusManager(token_config=token_config)
 ```
+
+> TokenConfig also exposes `load_from_file` which can be used in the same way as the `BasicAuth` and `ProjectConfig` classes, required fields are `project_name` and `token`
+
+#### `project_dir`
+The `project_dir` argument just tells this library where to save generated tokens (if you are making a new project)
+
+
+### Making a new project
+
+#### Pre-Requisites
+
+##### Items
+As a **pre-requisite** make sure that you already have some items formatted into the `genius` format
+[Official Docs](https://gamalon.github.io/genius-hackathon-documentation/) (look at Step 2 of "GettingStarted")
+
+**Example**
+```json
+[
+  {
+    "title": "Something",
+    "description": "Well ain't that something",
+    "image_url": "https://animalfactguide.com/wp-content/uploads/2022/03/koala_iStock-140396797-scaled.jpg",
+    "external_url": "https://google.com",
+    "id": "1",
+    "metadata": [
+      {"name": "someValue", "value": 1},
+      {"name": "someOtherValue", "value": "Hello"}
+    ]
+  }, ...
+]
+```
+
+> Ensure that `image_url` and `external_url` are both valid. `image_url` needs to resolve to an image, and
+`external_url` needs to resolve to a webpage.
+
+> One trick (if your app is not image/card focused) is to just use the same `image_url` and `external_url` for all items.
+
+##### Instructions
+You will also need a set of instructions for your model. The format for these can be seen under Step 3 of Getting Started in the
+previously linked docs.
+
+**Example**
+```json
+[
+  {
+    "promptlet": "You do big things"
+  },
+  {
+    "promptlet": "You do really big things"
+  }
+]
+```
+
+
+
 
 ## Required Features
 - [x] Create a new Genius Project
