@@ -56,8 +56,8 @@ Both `BasicAuth` and `ProjectConfig` can load their information from a `.json` f
 ```python
 from genius import BasicAuth, ProjectConfig, GeniusManager
 
-basic_auth = BasicAuth().load_from_file("file_with_my_auth.json")
-project_config = ProjectConfig().load_from_file("file_with_my_project_info.json")
+basic_auth = BasicAuth.load_from_file("file_with_my_auth.json")
+project_config = ProjectConfig.load_from_file("file_with_my_project_info.json")
 
 manager = GeniusManager(basic_auth=basic_auth, project_config=project_config)
 ```
@@ -132,17 +132,18 @@ previously linked docs.
 As long as we have either a variable containing our `items`, and `prompts` or
 have that information in some files we can utilize the `GeniusManager` to create and manage our project.
 
-##### The "Easy" way
-
 The `GeniusManager` class exposes a function called `create_project`. This function
 will build your model from start to finish and is the easiest way to utilize this class.
+
+> You will need to wait for an email that says `Training complete` or something along those lines
+before you will be able to actually use the model.
 
 **Example**
 ```python
 from genius import GeniusManager, BasicAuth, ProjectConfig
 
 # load in our required auth and configuration for creating a new project
-basic_auth = BasicAuth().load_from_file("myauth.json")
+basic_auth = BasicAuth.load_from_file("myauth.json")
 project_config = ProjectConfig.load_from_file("myconfig.json")
 
 # create the manager
@@ -154,6 +155,73 @@ manager.create_project(items, instructions) # if we have variables `items` and `
 
 manager.create_project(items_path, instructions_path) # assuming these variables contain a string pointing to those files i.e items_path = "myfolder/items.json" and instructions_path = "myfolder/instructions.json"
 ```
+
+This will create a `token.json` file inside of `project_dir` (default: "genius_project/")
+that can be used to create a `TokenConfig` class for later use.
+
+
+### Getting items from an Existing Project
+
+**Example**
+```python
+from genius import GeniusManager, TokenConfig, FeedPayload
+
+# Load our token configuration for an existing project (this will be made by `create_project` as in previous example)
+token_config = TokenConfig.load_from_file("genius_project/token.json")
+
+manager = GeniusManager(token_config=token_config)
+
+# If we have not promoted a model we should do so now
+manager.promote_most_recent_model() # this will promote the most recently trained model to being the active model
+
+payload = FeedPayload(
+  page=1, #paginated results
+  batch_count=1, #number of items to return
+  events=[], # For event information see the official docs
+  search_prompt="I want something!" # this can be an initial user search or any string you like
+)
+
+items = manager.batch_to_items(payload=payload)
+# optionally you can pass a session_id to this function
+
+items = manager.batch_to_items(session_id="my_custom_id", payload=payload)
+# if a session_id is not passed a random uuid is used instead.
+```
+
+### Other Operations
+The `GeniusManager` class also exposes CRUD operations on items, and instructions.
+
+#### Items
+
+##### .upload_items(items_or_path: Union\[str, list\])
+This can take in either a file path or a list of genius items and upload them to your project
+you will need to re-train a model after doing this.
+
+##### .list_items(page:int=1, count:int=10)
+This will return items. You can paginate over results or just set the count to the number of items you have / large number
+
+##### .get_item(item_id:str)
+This will return the item given its id. This function is used by `batch_to_items` to convert item ids into usable items
+
+##### .update_item(item_id:str, updated_item:dict)
+You can update an item using its id and sending a new `genius` formatted item
+
+##### .delete_item(item_id:str)
+Remove an Item
+
+#### Instructions
+
+##### .upload_instructions(instructions_or_path: Union\[str, list\])
+This is used in `create_project` to upload instructions. Pass either a list of instructions or a file path as a string
+
+##### .list_instructions()
+Returns all instructions available to the model
+
+##### .update_instruction(promptlet_id:str, promptlet:dict)
+Update an instruction with new information
+
+##### .delete_instruction(promptlet_id:str)
+Remove an instruction
 
 
 
