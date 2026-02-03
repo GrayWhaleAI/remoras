@@ -128,6 +128,33 @@ previously linked docs.
 ]
 ```
 
+#### Using the `GeniusManager`
+As long as we have either a variable containing our `items`, and `prompts` or
+have that information in some files we can utilize the `GeniusManager` to create and manage our project.
+
+##### The "Easy" way
+
+The `GeniusManager` class exposes a function called `create_project`. This function
+will build your model from start to finish and is the easiest way to utilize this class.
+
+**Example**
+```python
+from genius import GeniusManager, BasicAuth, ProjectConfig
+
+# load in our required auth and configuration for creating a new project
+basic_auth = BasicAuth().load_from_file("myauth.json")
+project_config = ProjectConfig.load_from_file("myconfig.json")
+
+# create the manager
+manager = GeniusManager(basic_auth=basic_auth, project_config=project_config)
+
+manager.create_project(items, instructions) # if we have variables `items` and `instructions` we can pass them directly
+
+# OR using file paths
+
+manager.create_project(items_path, instructions_path) # assuming these variables contain a string pointing to those files i.e items_path = "myfolder/items.json" and instructions_path = "myfolder/instructions.json"
+```
+
 
 
 
