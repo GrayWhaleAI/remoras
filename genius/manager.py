@@ -268,6 +268,11 @@ class GeniusManager:
         models = [{"iso_time": datetime.fromisoformat(model["created_at"]), **model} for model in models]
         most_recent = max(models, key=lambda model: model["iso_time"])
 
+        self.promote_model(most_recent["id"])
+
+
+    def promote_model(self, model_id:str):
         # Call the promotion endpoint using the most_recent id
-        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/{most_recent['id']}/promote", headers=self._make_token_header())
+        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/{model_id}/promote", headers=self._make_token_header())
         r.raise_for_status()
+        

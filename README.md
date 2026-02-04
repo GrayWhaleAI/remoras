@@ -4,6 +4,10 @@ A simple management system for the Genius Hackathon API.
 
 ## How to install
 
+### Requirements
+1. Python >= 3.12
+
+
 Create a virtual environment for your project:
 1. `uv venv` or `python -m venv .venv`
 2. Activate the virtual environment `source .venv/bin/activate` (follow OS specific instructions)
