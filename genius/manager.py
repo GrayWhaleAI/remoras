@@ -27,6 +27,7 @@ class GeniusManager:
     ):
 
         assert (basic_auth and project_config) or token_config, "To manage a project you must pass either token_config, or (basic_auth, and project_config)"
+        assert not (basic_auth and project_config and token_config), "Do not pass all three `basic_auth`, `token_config` and `project_config`. Either `token_config`, or (`basic_auth` and `project_config`)"
 
         self.basic_auth = basic_auth
         self.project_config = project_config
@@ -34,6 +35,14 @@ class GeniusManager:
         self.project_dir = project_dir
 
         os.makedirs(self.project_dir, exist_ok=True) # make our project dir if it does not exist
+
+    @classmethod
+    def from_token_config(self, token_config:TokenConfig):
+        return GeniusManager(token_config=token_config)
+
+    @classmethod
+    def from_auth_config(self, basic_auth:BasicAuth, project_config:ProjectConfig):
+        return GeniusManager(basic_auth=basic_auth, project_config=project_config)        
 
     def save_token_config(self) -> None:
         """Save our token to the `project_dir` directory, if a `token_config` has not been set nothing will hapen"""
@@ -212,8 +221,13 @@ class GeniusManager:
     def update_item(self, item_id:str, updated_item:dict):
         assert self.token_config, "No token config"
 
+        metadata = updated_item.get('metadata', []) # Thanks Cheldawg. Filters out the `available` metadata which was causing errors on upload
+        updated_item['metadata'] = [meta for meta in metadata if meta.get('name') != 'available']
+        
         r = requests.put(f"{ENDPOINT}/project/{self.token_config.project_name}/items/{item_id}/update", json=updated_item, headers=self._make_token_header())
         r.raise_for_status()
+
+        return r.json()
 
     def delete_item(self, item_id:str):
         assert self.token_config, "No token config"

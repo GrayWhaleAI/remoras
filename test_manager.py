@@ -1,28 +1,67 @@
-from genius import GeniusManager, BasicAuth, ProjectConfig, TokenConfig
+from genius import GeniusManager, BasicAuth, ProjectConfig, TokenConfig, FeedPayload
 import pytest
 import requests
+import os
 
-# Tests
-# 1. Test for construction errors
-# 2. Test save and load token
-# 3. Test header creation
-# 4. Test make project
-#     - test working
-#     - test error throwing
-# 5. Test upload items
-# 6. Test upload instructions
-# 7. Test CRUD on items
-# 8. Test CRUD on instructions
-# 9. Test create_model
-#
 
-def test_manager_construction():
+TEST_AUTH = BasicAuth(username="a", password="b")
+TEST_PROJECT = ProjectConfig(project_name="test", project_summary="something", hacker_email="123@email.com")
+TEST_TOKEN = TokenConfig(project_name="test", token="123456789")
+
+@pytest.fixture
+def remove_project_dir():
+    if os.path.exists('genius_project/') and os.path.isdir('genius_project'):
+        os.removedirs('genius_project/')
+        
+def test_manager_construction_assertions(remove_project_dir):
+    """Check basic construction assertions
+    1. Exception for no args,
+    2. Exception for only passing BasicAuth
+    3. Exception for only passing ProjectConfig
+    4. Exception for passing all 3 BasicAuth, ProjectConfig, and TokenConfig
+    """
     with pytest.raises(AssertionError):
         manager = GeniusManager() # should raise an exception because no configs are sent
     
-        manager = GeniusManager(basic_auth=BasicAuth(username="a", password="b")) #should raise an exception because we need project_config as well
+        manager = GeniusManager(basic_auth=TEST_AUTH) #should raise an exception because we need project_config as well
 
-        manager = GeniusManager(project_config=ProjectConfig(project_name="a", project_summary="b", hacker_email="c"))
+        manager = GeniusManager(project_config=TEST_PROJECT) # Exception for not providing auth
+
+        manager = GeniusManager(token_config=TEST_TOKEN, basic_auth=TEST_AUTH, project_config=TEST_PROJECT) # Should fail because we provide all three
+
+def test_manager_construction(remove_project_dir):
+    """Test valid constructions
+    1. BasicAuth and ProjectConfig,
+    2. TokenConfig,
+    3. The `from_token_config` function
+    4. The `from_auth_config` function
+    """
+    # Basic auth and Project Conf construction
+    manager = GeniusManager(basic_auth=TEST_AUTH, project_config=TEST_PROJECT)
+    assert manager.token_config is None, "Got a Token Config when we should not have"
+
+    # TokenConfig construction
+    manager = GeniusManager(token_config=TEST_TOKEN)
+    assert manager.basic_auth is None and manager.project_config is None
+
+    manager = GeniusManager.from_token_config(TEST_TOKEN)
+    assert manager.token_config
+
+    manager = GeniusManager.from_auth_config(TEST_AUTH, TEST_PROJECT)
+    assert manager.basic_auth and manager.project_config
+
+# PyTest Fixture class
+class MockMirrorResponse():
+    def __init__(self, payload):
+        self.payload = payload
+
+    def json(self):
+        return self.payload
+
+    @staticmethod
+    def raise_for_status():
+        return
+        
 
 class MockItemResponse():
     @staticmethod
@@ -41,16 +80,42 @@ def mock_response(monkeypatch):
         return MockItemResponse()
 
     def mock_post(*args, **kwargs):
-        return MockItemResponse()
+        return MockMirrorResponse(kwargs["json"])
 
     monkeypatch.setattr(requests, "get", mock_get)
-    monkeypatch.setattr(requests, "post", mock_get)
+    monkeypatch.setattr(requests, "post", mock_post)
+    monkeypatch.setattr(requests, "put", mock_post)
 
 def test_batch(mock_response):
+    """Test batch call and make sure payload looks like default FeedPayload"""
     manager = GeniusManager(token_config=TokenConfig(project_name="test", token="123"))
-    items = manager.batch()
+    payload = manager.batch()
 
-    assert items == ["1", "2", "3"]
-    
+    assert payload == FeedPayload().dict()
+
+def test_update_item_filter(mock_response):
+    manager = GeniusManager.from_token_config(TEST_TOKEN)
+    fake_item = {
+        "id": 0,
+        "title": "Your mom",
+        "description": "cow",
+        "external_url": "https://cow.com",
+        "image_url": "https://imgur.com/cow",
+        "metadata": [
+            {
+                "name": "legs",
+                "value": 4
+            },
+            {
+                "name": "available",
+                "value": True
+            }
+        ]
+    }
+
+    post_filter_item = manager.update_item(0, fake_item)
+
+    meta = post_filter_item.get('metadata')
+    assert 'available' not in [m.get('name') for m in meta]
     
         
