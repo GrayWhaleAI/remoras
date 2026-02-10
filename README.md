@@ -226,20 +226,3 @@ Update an instruction with new information
 
 ##### .delete_instruction(promptlet_id:str)
 Remove an instruction
-
-
-
-
-## Required Features
-- [x] Create a new Genius Project
-- [x] Safely store tokens and projects
-- [x] Upload, edit, and delete `items` and `instructions`
-- [x] Easily retrieve `items` via payloads
-
-## Brainstorming
-
-Okay so my first instinct is to do some kind of class for the project management,
-provide in either `username`, and `password` for creation of new projects, or `token`
-to utilize existing projects.
-
-
