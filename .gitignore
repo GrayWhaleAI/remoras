@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 *.env
+
+# ignore the default created dir, should be removed by tests
+genius_project/

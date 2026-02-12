@@ -38,10 +38,31 @@ class GeniusManager:
 
     @classmethod
     def from_token_config(self, token_config:TokenConfig):
+        """Create a manager from a TokenConfig
+
+        Arg:
+            token_config: TokenConfig
+
+        Examples:
+
+        1. manager = GeniusManager.from_token_config(TokenConfig(token="sometokenhere", project_name="myproject"))
+        2. manager = GeniusManager.from_token_config(TokenConfig.load_from_file("my_token.json"))
+        """
         return GeniusManager(token_config=token_config)
 
     @classmethod
     def from_auth_config(self, basic_auth:BasicAuth, project_config:ProjectConfig):
+        """Create a manager from a BasicAuth and ProjectConfig
+
+        Arg:
+            basic_auth: BasicAuth
+            project_config: ProjectConfig
+
+        Examples:
+
+        1. manager = GeniusManager.from_auth_config(BasicAuth(username="username_here", password="my_password"), ProjectConfig(project_name="my_project", project_summary="summary", hacker_email="myemail@me.com"))
+        2. manager = GeniusManager.from_auth_config(BasicAuth.load_from_file("auth.json"), ProjectConfig.load_from_file("project.json"))
+        """
         return GeniusManager(basic_auth=basic_auth, project_config=project_config)        
 
     def save_token_config(self) -> None:

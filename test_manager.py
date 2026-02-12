@@ -29,6 +29,16 @@ def test_manager_construction_assertions(remove_project_dir):
 
         manager = GeniusManager(token_config=TEST_TOKEN, basic_auth=TEST_AUTH, project_config=TEST_PROJECT) # Should fail because we provide all three
 
+def test_manager_construction_from_methods(remove_project_dir):
+    """Check to ensure the GeniusManager.from_token_config(TokenConfig) and GeniusManager_from_auth_config(BasicAuth, ProjectConfig) methods work"""
+
+    manager = GeniusManager.from_token_config(TEST_TOKEN)
+    assert manager.token_config
+
+    manager = GeniusManager.from_auth_config(TEST_AUTH, TEST_PROJECT)
+    assert manager.basic_auth and manager.project_config
+
+
 def test_manager_construction(remove_project_dir):
     """Test valid constructions
     1. BasicAuth and ProjectConfig,
