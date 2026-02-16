@@ -1,4 +1,4 @@
-from genius import GeniusManager, BasicAuth, ProjectConfig, TokenConfig, FeedPayload
+from genius import GeniusManager, BasicAuth, ProjectConfig, TokenConfig, FeedPayload, GeniusValidationError
 import pytest
 import requests
 import os
@@ -10,8 +10,9 @@ TEST_TOKEN = TokenConfig(project_name="test", token="123456789")
 
 @pytest.fixture
 def remove_project_dir():
-    if os.path.exists('genius_project/') and os.path.isdir('genius_project'):
-        os.removedirs('genius_project/')
+    dir_path = os.path.join(os.path.dirname(__file__), 'genius_project/')
+    if os.path.exists(dir_path) and os.path.isdir(dir_path):
+        os.removedirs(dir_path)
         
 def test_manager_construction_assertions(remove_project_dir):
     """Check basic construction assertions
@@ -96,6 +97,25 @@ def mock_response(monkeypatch):
     monkeypatch.setattr(requests, "post", mock_post)
     monkeypatch.setattr(requests, "put", mock_post)
 
+def test_validations(mock_response):
+    """Test that the upload functions will not work from the validation functions"""
+    bad_title = [{"titl": "d", "description": "a", "external_url": "b", "image_url": "c"}]
+    bad_desc = [{"title": "d", "descriptio": "a", "external_url": "b", "image_url": "c"}]
+    bad_ext = [{"titl": "d", "description": "a", "external_ur": "b", "image_url": "c"}]
+    bad_img = [{"titl": "d", "description": "a", "external_url": "b", "image_ur": "c"}]
+    bad_instruction = [{"promtler": "misspelled promptlet field"}]
+
+    manager = GeniusManager.from_token_config(TEST_TOKEN)
+
+    with pytest.raises(GeniusValidationError):
+        manager.upload_items(bad_title)
+        manager.upload_items(bad_desc)
+        manager.upload_items(bad_ext)
+        manager.upload_items(bad_img)
+
+        manager.upload_instructions(bad_instruction)
+    
+        
 def test_batch(mock_response):
     """Test batch call and make sure payload looks like default FeedPayload"""
     manager = GeniusManager(token_config=TokenConfig(project_name="test", token="123"))

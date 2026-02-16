@@ -5,6 +5,7 @@ from requests.auth import HTTPBasicAuth
 import os
 from typing import Union
 from .structs import BasicAuth, TokenConfig, ProjectConfig, FeedPayload
+from .data_validation import validate_items, validate_instructions
 from datetime import datetime
 
 # Normal endpoint for these operations. If this changes just update this field
@@ -102,6 +103,17 @@ class GeniusManager:
         # Save our created token to `project_dir`
         self.save_token_config()
         
+    def _load_obj_or_path(self, obj):
+        
+        if type(obj) is str:
+            assert os.path.exists(obj), f"Unable to find specified file at {obj}"
+
+            with open(obj, 'r') as f:
+                objs = json.loads(f.read())
+        else: # we have a list
+            objs = obj
+
+        return objs
 
     def upload_items(self, items_or_path:Union[str, list]) -> None:
         """Upload Genius items to the backend. Ensure you are using the proper format otherwise an HTTPError will be thrown
@@ -111,15 +123,11 @@ class GeniusManager:
         """
 
         # We have a file path so load the json first and set items to the loaded data
-        if type(items_or_path) is str:
-            assert os.path.exists(items_or_path), f"Unable to find specified file at {items_or_path}"
-
-            with open(items_or_path, 'r') as f:
-                items = json.loads(f.read())
-        else: # we have a list
-            items = items_or_path
+        items = self._load_obj_or_path(items_or_path)
         # items could not be loaded so throw an AssertionError
         assert items, "Items could not be loaded, or were not passed"
+
+        validate_items(items) # An assertion error will be thrown if we are unable to validate item sturcture
 
         # send items to backend
         assert self.token_config, "token_config not set unable to manage items"
@@ -135,16 +143,9 @@ class GeniusManager:
                     if list -> treat as raw items 
         """
         # check if we have a filepath, if so load the file with json
-        if type(instructions_or_path) is str:
-            assert os.path.exists(instructions_or_path), f"Could not find path {instructions_or_path}"
-
-            with open(instructions_or_path) as f:
-                instructions = json.loads(f.read())
-        else: #we have the raw instructions
-            instructions = instructions_or_path
-
+        instructions = self._load_obj_or_path(instructions_or_path)
         assert instructions, "Instructions could not be loaded"
-
+        validate_instructions(instructions) # An assertion error will be thrown if we are unable to validate instruction structure
         # make request to upload
         assert self.token_config, "token_config not set unable to manage instructions"
         r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/instruction/create", json=instructions, headers=self._make_token_header())
@@ -199,6 +200,12 @@ class GeniusManager:
 
     def create_project(self, items_or_path:Union[str, list], instructions_or_path:Union[str, list], remove_ai_instruction=False):
         """Full end to end creation of model"""
+
+        #Call Validation methods before starting
+        validate_items(self._load_obj_or_path(items_or_path))
+        validate_instructions(self._load_obj_or_path(instructions_or_path))
+
+        
         # Make the project 
         print("Making Project")
         self.make_project()
