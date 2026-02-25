@@ -17,10 +17,10 @@ of the old name. `remoras` was available on pypi
 Create a virtual environment for your project:
 1. `uv venv` or `python -m venv .venv`
 2. Activate the virtual environment `source .venv/bin/activate` (follow OS specific instructions)
-3. Clone this repo either into your project or somewhere near by `git clone https://github.com/GrayWhaleAI/newton.git`
+3. Clone this repo either into your project or somewhere near by `git clone https://github.com/GrayWhaleAI/remoras.git`
 4. With your virtual environment activated `cd newton`, `uv pip install -e .` or `pip install -e .`
 
-> You will ideally see something like `newton = 0.1.0` installed or something like that
+> You will ideally see something like `remoras = 0.1.0` installed or something like that
 
 ## How to use
 In your project you can import as so:
