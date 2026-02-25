@@ -35,7 +35,6 @@ class GeniusManager:
         self.token_config = token_config
         self.project_dir = project_dir
 
-        os.makedirs(self.project_dir, exist_ok=True) # make our project dir if it does not exist
 
     @classmethod
     def from_token_config(self, token_config:TokenConfig):
@@ -68,6 +67,8 @@ class GeniusManager:
 
     def save_token_config(self) -> None:
         """Save our token to the `project_dir` directory, if a `token_config` has not been set nothing will hapen"""
+
+        os.makedirs(self.project_dir, exist_ok=True) # make our project dir if it does not exist
         assert self.token_config, "No token config to save"
 
         with open(f"{self.project_dir}/token.json", "w") as f:

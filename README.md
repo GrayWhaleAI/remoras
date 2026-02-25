@@ -1,6 +1,8 @@
-# Newton
+# Remoras
 
 A simple management system for the Genius Hackathon API.
+
+[remora](https://en.wikipedia.org/wiki/Remora)
 
 ## How to install
 
@@ -20,7 +22,7 @@ Create a virtual environment for your project:
 In your project you can import as so:
 
 ```python
-from genius import GeniusManager, TokenConfig, FeedPayload
+from remoras import GeniusManager, TokenConfig, FeedPayload
 ```
 
 ### `GeniusManager`
@@ -43,7 +45,7 @@ The `ProjectConfig` class provides a stricter way of passing the name and inform
 
 **Example**
 ```python
-from genius import GeniusManager, BasicAuth, ProjectConfig
+from remoras import GeniusManager, BasicAuth, ProjectConfig
 
 basic_auth = BasicAuth(username="provided_username", password="provided_password")
 project_config = ProjectConfig(project_name="MyCoolProject", project_summary="This is my super cool project", hacker_email="mycool@email.com")
@@ -58,7 +60,7 @@ Both `BasicAuth` and `ProjectConfig` can load their information from a `.json` f
 
 **Example**
 ```python
-from genius import BasicAuth, ProjectConfig, GeniusManager
+from remoras import BasicAuth, ProjectConfig, GeniusManager
 
 basic_auth = BasicAuth.load_from_file("file_with_my_auth.json")
 project_config = ProjectConfig.load_from_file("file_with_my_project_info.json")
@@ -74,7 +76,7 @@ can utilize the `TokenConfig` class.
 
 **Example**
 ```python
-from genius import GeniusManager, TokenConfig
+from remoras import GeniusManager, TokenConfig
 
 token_config = TokenConfig(project_name="MyCoolProject", token="supersecrettoken199999")
 manager = GeniusManager(token_config=token_config)
@@ -144,7 +146,7 @@ before you will be able to actually use the model.
 
 **Example**
 ```python
-from genius import GeniusManager, BasicAuth, ProjectConfig
+from remoras import GeniusManager, BasicAuth, ProjectConfig
 
 # load in our required auth and configuration for creating a new project
 basic_auth = BasicAuth.load_from_file("myauth.json")
@@ -168,7 +170,7 @@ that can be used to create a `TokenConfig` class for later use.
 
 **Example**
 ```python
-from genius import GeniusManager, TokenConfig, FeedPayload
+from remoras import GeniusManager, TokenConfig, FeedPayload
 
 # Load our token configuration for an existing project (this will be made by `create_project` as in previous example)
 token_config = TokenConfig.load_from_file("genius_project/token.json")

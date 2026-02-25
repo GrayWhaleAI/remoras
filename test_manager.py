@@ -1,4 +1,4 @@
-from genius import GeniusManager, BasicAuth, ProjectConfig, TokenConfig, FeedPayload, GeniusValidationError
+from remoras import GeniusManager, BasicAuth, ProjectConfig, TokenConfig, FeedPayload, GeniusValidationError
 import pytest
 import requests
 import os

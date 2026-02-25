@@ -1,4 +1,4 @@
-from genius import GeniusManager, TokenConfig, BasicAuth, ProjectConfig, FeedPayload
+from newton import GeniusManager, TokenConfig, BasicAuth, ProjectConfig, FeedPayload
 from dotenv import load_dotenv
 import os
 
