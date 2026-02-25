@@ -10,7 +10,15 @@ of the old name. `remoras` was available on pypi
 
 ## How to install
 
-### Requirements
+### PyPi
+`pip install remoras`
+
+[PyPi Link](https://pypi.org/project/remoras/)
+
+### From Source
+If you are interested in modifying or contributing to `remoras`
+
+####  Requirements
 1. Python >= 3.12
 
 
