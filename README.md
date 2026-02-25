@@ -4,6 +4,10 @@ A simple management system for the Genius Hackathon API.
 
 [remora](https://en.wikipedia.org/wiki/Remora)
 
+
+Changed name from `newton` to `remoras` if you see `newton` or `genius` somewhere this is an artifact
+of the old name. `remoras` was available on pypi
+
 ## How to install
 
 ### Requirements
