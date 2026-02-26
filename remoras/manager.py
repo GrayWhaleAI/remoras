@@ -4,12 +4,14 @@ import json
 from requests.auth import HTTPBasicAuth
 import os
 from typing import Union
-from .structs import BasicAuth, TokenConfig, ProjectConfig, FeedPayload
-from .data_validation import validate_items, validate_instructions
 from datetime import datetime
 
+from .structs import BasicAuth, TokenConfig, ProjectConfig, FeedPayload
+from .data_validation import validate_items, validate_instructions
+from .utils import load_obj_or_path
+
 # Normal endpoint for these operations. If this changes just update this field
-ENDPOINT = "https://app.productgenius.io/hackathon"
+ENDPOINT = "https://app.productgenius.io"
 
 class GeniusManager:
     """GeniusManager handles new and old genius projects.
@@ -94,7 +96,7 @@ class GeniusManager:
         basic = HTTPBasicAuth(self.basic_auth.username, self.basic_auth.password)
 
         # Send create request and throw an error if http does not connect
-        r = requests.post(f"{ENDPOINT}/project/create", json=self.project_config.__dir__(), auth=basic)
+        r = requests.post(f"{ENDPOINT}/hackathon/project/create", json=self.project_config.__dir__(), auth=basic)
         r.raise_for_status()
 
         # Get our created token out, create a TokenConfig class that we store into `token_config`
@@ -104,8 +106,8 @@ class GeniusManager:
         # Save our created token to `project_dir`
         self.save_token_config()
         
-    def _load_obj_or_path(self, obj):
-        
+    def _load_obj_or_path(self, obj: Union[list, str]):
+        """Check the type of `obj`. If it is a string treat it like a json filepath, else just return it"""
         if type(obj) is str:
             assert os.path.exists(obj), f"Unable to find specified file at {obj}"
 
@@ -116,24 +118,6 @@ class GeniusManager:
 
         return objs
 
-    def upload_items(self, items_or_path:Union[str, list]) -> None:
-        """Upload Genius items to the backend. Ensure you are using the proper format otherwise an HTTPError will be thrown
-
-            Args:
-                - `items_or_path`: Send either a list of genius items or a path to a json file containing genius items                
-        """
-
-        # We have a file path so load the json first and set items to the loaded data
-        items = self._load_obj_or_path(items_or_path)
-        # items could not be loaded so throw an AssertionError
-        assert items, "Items could not be loaded, or were not passed"
-
-        validate_items(items) # An assertion error will be thrown if we are unable to validate item sturcture
-
-        # send items to backend
-        assert self.token_config, "token_config not set unable to manage items"
-        r = requests.post(f"{ENDPOINT}/project/{self.token_config.project_name}/items/create", json=items, headers=self._make_token_header())
-        r.raise_for_status()
         
     def upload_instructions(self, instructions_or_path:Union[str, list]) -> None:
         """Upload instructions / prompts to the genius model
@@ -149,26 +133,26 @@ class GeniusManager:
         validate_instructions(instructions) # An assertion error will be thrown if we are unable to validate instruction structure
         # make request to upload
         assert self.token_config, "token_config not set unable to manage instructions"
-        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/instruction/create", json=instructions, headers=self._make_token_header())
+        r = requests.post(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/model/instruction/create", json=instructions, headers=self._make_token_header())
         r.raise_for_status()
 
 
     def list_instructions(self):
         """List all available instructions"""
         assert self.token_config, "No token config"
-        r = requests.get(f"{ENDPOINT}/{self.token_config.project_name}/model/instruction/list", headers=self._make_token_header())
+        r = requests.get(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/model/instruction/list", headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
 
     def update_instruction(self, promptlet_id:str, promptlet:dict):
         assert self.token_confg, "No token config"
-        r = requests.put(f"{ENDPOINT}/{self.token_config.project_name}/model/instruction/{promptlet_id}/update", json=promptlet, headers=self._make_token_header())
+        r = requests.put(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/model/instruction/{promptlet_id}/update", json=promptlet, headers=self._make_token_header())
         r.raise_for_status()
 
     def delete_instruction(self, promptlet_id:str):
         assert self.token_config, "No token config"
-        r = requests.delete(f"{ENDPOINT}/{self.token_config.project_name}/model/instruction/{promptlet_id}/delete", headers=self._make_token_header())
+        r = requests.delete(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/model/instruction/{promptlet_id}/delete", headers=self._make_token_header())
         r.raise_for_status()
 
     
@@ -190,14 +174,6 @@ class GeniusManager:
         return False
            
     
-    def create_model(self):
-        """Simple model creation"""
-        # Assert that we have a token config to use
-        assert self.token_config, "token_config must be set before creating a model"
-
-        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/create", headers=self._make_token_header())
-        r.raise_for_status()
-        
 
     def create_project(self, items_or_path:Union[str, list], instructions_or_path:Union[str, list], remove_ai_instruction=False):
         """Full end to end creation of model"""
@@ -229,11 +205,30 @@ class GeniusManager:
         self.create_model()
 
     
+    def upload_items(self, items_or_path:Union[str, list]) -> None:
+        """Upload Genius items to the backend. Ensure you are using the proper format otherwise an HTTPError will be thrown
+
+            Args:
+                - `items_or_path`: Send either a list of genius items or a path to a json file containing genius items                
+        """
+
+        # We have a file path so load the json first and set items to the loaded data
+        items = self._load_obj_or_path(items_or_path)
+        # items could not be loaded so throw an AssertionError
+        assert items, "Items could not be loaded, or were not passed"
+
+        validate_items(items) # An assertion error will be thrown if we are unable to validate item sturcture
+
+        # send items to backend
+        assert self.token_config, "token_config not set unable to manage items"
+        r = requests.post(f"{ENDPOINT}/platform/project/{self.token_config.project_name}/items/create", json=items, headers=self._make_token_header())
+        r.raise_for_status()
+
     def list_items(self, page=1, count=10) -> list:
         """List items that have been uploaded"""
         assert self.token_config, "No token config in use"
 
-        r = requests.get(f"{ENDPOINT}/project/{self.token_config.project_name}/items/list", params={"page": page, "count": count}, headers=self._make_token_header())
+        r = requests.get(f"{ENDPOINT}/platform/project/{self.token_config.project_name}/items/list", params={"page": page, "count": count}, headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
@@ -242,7 +237,7 @@ class GeniusManager:
         """Get a single item from an item_id"""
         assert self.token_config, "No token config in use"
 
-        r = requests.get(f"{ENDPOINT}/project/{self.token_config.project_name}/items/{item_id}", headers=self._make_token_header())
+        r = requests.get(f"{ENDPOINT}/platform/project/{self.token_config.project_name}/items/{item_id}", headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
@@ -253,7 +248,7 @@ class GeniusManager:
         metadata = updated_item.get('metadata', []) # Thanks Cheldawg. Filters out the `available` metadata which was causing errors on upload
         updated_item['metadata'] = [meta for meta in metadata if meta.get('name') != 'available']
         
-        r = requests.put(f"{ENDPOINT}/project/{self.token_config.project_name}/items/{item_id}/update", json=updated_item, headers=self._make_token_header())
+        r = requests.put(f"{ENDPOINT}/platform/project/{self.token_config.project_name}/items/{item_id}/update", json=updated_item, headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
@@ -261,7 +256,7 @@ class GeniusManager:
     def delete_item(self, item_id:str):
         assert self.token_config, "No token config"
 
-        r = requests.delete(f"{ENDPOINT}/project/{self.token_config.project_name}/items/{item_id}/delete", headers=self._make_token_header())
+        r = requests.delete(f"{ENDPOINT}/platform/project/{self.token_config.project_name}/items/{item_id}/delete", headers=self._make_token_header())
         r.raise_for_status()
     
     
@@ -279,7 +274,7 @@ class GeniusManager:
         # set a random session id if one is not provided
         session_id = uuid4() if not session_id else session_id
 
-        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/batch/{session_id}", json=payload.dict(), headers=self._make_token_header())
+        r = requests.post(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/batch/{session_id}", json=payload.dict(), headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
@@ -292,12 +287,20 @@ class GeniusManager:
 
         return items
         
+    def create_model(self, model_id:str=None):
+        """Simple model creation. Passing the `model_id` paramater will trigger iterative training on the model"""
+        # Assert that we have a token config to use
+        params = {"model_id": model_id} if model_id else {}
+        assert self.token_config, "token_config must be set before creating a model"
+        r = requests.post(f"{ENDPOINT}/platform/{self.token_config.project_name}/model/create", headers=self._make_token_header(), params=params)
+        r.raise_for_status()
+        
 
     def list_models(self):
         """List available models"""
         assert self.token_config, "No token config in use"
 
-        r = requests.get(f"{ENDPOINT}/{self.token_config.project_name}/model/list", headers=self._make_token_header())
+        r = requests.get(f"{ENDPOINT}/hackathon/{self.token_config.project_name}/model/list", headers=self._make_token_header())
         r.raise_for_status()
 
         return r.json()
@@ -316,6 +319,5 @@ class GeniusManager:
 
     def promote_model(self, model_id:str):
         # Call the promotion endpoint using the most_recent id
-        r = requests.post(f"{ENDPOINT}/{self.token_config.project_name}/model/{model_id}/promote", headers=self._make_token_header())
+        r = requests.post(f"{ENDPOINT}/platform/{self.token_config.project_name}/model/{model_id}/activate", headers=self._make_token_header())
         r.raise_for_status()
-        
