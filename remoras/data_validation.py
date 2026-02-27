@@ -18,3 +18,11 @@ def validate_instructions(instructions: list[dict]):
             assert "promptlet" in instruction, f"'promptlet' field not found inside of instruction: {instruction}"
         except AssertionError as e:
             raise GeniusValidationError(e.args)
+
+def validate_policies(policies: list[dict]):
+    for policy in policies:
+        try:
+            assert "policy" in policy, "'policy' field not found inside of object"
+        except AssertionError as e:
+            raise GeniusValidationError(e.args)
+    

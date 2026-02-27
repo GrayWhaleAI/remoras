@@ -10,7 +10,7 @@ class BasicAuth:
     password:str
 
     @classmethod
-    def load_from_file(self, path:str):
+    def load(self, path:str):
         assert os.path.exists(path), "File path does not exist"
 
         with open(path, 'r') as f:
@@ -20,8 +20,8 @@ class BasicAuth:
 
         return BasicAuth(username=auth.get("username"), password=auth.get("password"))
 
-    def __dir__(self):
-        return {"username": self.username, "password": self.password}
+    def dict(self):
+        return vars(self)
 
 # Named dict for project management via a token
 @dataclass
@@ -30,7 +30,7 @@ class TokenConfig:
     project_name:str
 
     @classmethod
-    def load_from_file(self, path:str):
+    def load(self, path:str):
         assert os.path.exists(path), "File path does not exist"
 
         with open(path, 'r') as f:
@@ -40,8 +40,11 @@ class TokenConfig:
 
         return TokenConfig(project_name=token.get("project_name"), token=token.get("token"))
 
-    def __dir__(self):
-        return {"project_name": self.project_name, "token": self.token}
+    def dict(self):
+        return vars(self)
+
+    def auth_header(self):
+        return {"Authorization": f"Bearer {self.token}"}
 
 # Named dict for new project requirements
 @dataclass
@@ -51,7 +54,7 @@ class ProjectConfig:
     project_summary:str
     
     @classmethod
-    def load_from_file(self, path:str):
+    def load(self, path:str):
         assert os.path.exists(path), "File path does not exist"
 
         with open(path, 'r') as f:
@@ -60,9 +63,6 @@ class ProjectConfig:
         assert project.get("project_name") and project.get("project_summary") and project.get("hacker_email"), "Fields `project_name` and `project_summary` and `hacker_email` were not found. Ensure both are present in your project json file!"
 
         return ProjectConfig(project_name=project.get("project_name"), project_summary=project.get("project_summary"), hacker_email=project.get("hacker_email"))
-
-    def __dir__(self): #old way of doing this (recently learned about the vars(self) trick)
-        return {"project_name": self.project_name, "project_summary": self.project_summary, "hacker_email": self.hacker_email}
 
     def dict(self):
         return vars(self)
