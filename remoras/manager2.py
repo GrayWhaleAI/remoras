@@ -33,6 +33,7 @@ class GWManager:
         self.items = ItemManager(self)
         self.policies = PolicyManager(self)
         self.models = ModelManager(self)
+        self.data = DataManager(self)
 
     @classmethod
     def from_token(self, token_config:TokenConfig):
@@ -263,5 +264,39 @@ class ModelManager:
 
         r.raise_for_status()
         return r.json()
+
+class DataManager:
+    def __init__(
+        self,
+        manager: GWManager
+    ):
+        self.manager = manager
+
+    def _get_endpoint(self):
+        assert self.manager.token_config, "No token_config in GWManager"
+        return f"{ENDPOINT}/hackathon/{self.manager.token_config.project_name}"
+
+    def feed(self, payload:FeedPayload, session_id=None):
+        session_id = uuid4() if not session_id else session_id
+        r = requests.post(
+            f"{self._get_endpoint()}/feed/{session_id}",
+            headers=self.manager.token_config.auth_header(),
+            json=payload.dict()
+        )
+        r.raise_for_status()
+        return r.json()
+       
+
+    def batch(self, payload:FeedPayload, session_id=None):
+        session_id = uuid4() if not session_id else session_id
+        r = requests.post(
+            f"{self._get_endpoint()}/batch/{session_id}",
+            headers=self.manager.token_config.auth_header(),
+            json=payload.dict()
+        )
+        r.raise_for_status()
+        return r.json()
+
+    
     
         
