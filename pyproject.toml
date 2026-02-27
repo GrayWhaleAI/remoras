@@ -1,6 +1,6 @@
 [project]
 name = "remoras"
-version = "1.0.0"
+version = "1.0.1"
 description = "A simple project manager for the Genius Hackathon API. Allows for project creation, management, and interactions"
 readme = "README.md"
 requires-python = ">=3.12"
