@@ -1,6 +1,6 @@
 # Remoras
 
-A simple management system for the Genius Hackathon API.
+A simple management system for the Devcamp Hackathon API.
 
 [remora](https://en.wikipedia.org/wiki/Remora)
 
@@ -9,8 +9,8 @@ Changed name from `newton` to `remoras` if you see `newton` or `genius` somewher
 of the old name. `remoras` was available on pypi.
 
 ## Remoras Wiki
-
-[Wiki](https://github.com/GrayWhaleAI/remoras/wiki)
+For more information and usage guides please see the [Wiki](https://github.com/GrayWhaleAI/remoras/wiki) on
+our github.
 
 ## How to install
 
