@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
-
+import asyncio
+from websockets.asyncio.client import connect, ClientConnection
 
 from uuid import uuid4
 import json
@@ -13,6 +14,8 @@ from .data_validation import validate_items, validate_policies
 from .utils import load_obj_or_path
 
 ENDPOINT = "https://app.productgenius.io"
+VISITOR = "carl-11" # Test value for utilizing the visitor id of PG websocket API
+
 
 class GWManager:
     def __init__(self,
@@ -34,6 +37,8 @@ class GWManager:
         self.policies = PolicyManager(self)
         self.models = ModelManager(self)
         self.data = DataManager(self)
+        self.websocket = WebSocketManager(self)
+        
 
     @classmethod
     def from_token(self, token_config:TokenConfig):
@@ -299,4 +304,28 @@ class DataManager:
 
     
     
+class WebSocketManager:
+    def __init__(self, manager:GWManager):
+        self.manager = manager
+        self.socket:ClientConnection = None
+        self.socket_endpoint = f"{ENDPOINT}/ws/platform/feed/{self.manager.token_config.project_name}/{VISITOR}"
+        self.socket_endpoint = self.socket_endpoint.replace("https", "wss")
+
+    async def initiate(self):
+        self._active_session = str(uuid4())
+        self.socket = await connect(f"{self.socket_endpoint}/{self._active_session}")
         
+    async def send_message(self, message:str):
+        if not self.socket:
+            return
+
+        await self.socket.send(message)
+
+    async def send_json(self, payload:dict):
+        if not self.socket:
+            return
+
+        await self.socket.send(json.dumps(payload))
+
+
+        return await self.socket.recv()

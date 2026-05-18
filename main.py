@@ -1,9 +1,11 @@
-from newton import GeniusManager, TokenConfig, BasicAuth, ProjectConfig, FeedPayload
+from remoras import GeniusManager, TokenConfig, BasicAuth, ProjectConfig, FeedPayload, GWManager
+import json
 from dotenv import load_dotenv
 import os
+import asyncio
 
 
-def main():
+async def main():
     print("Hello from newton!")
 
     load_dotenv()
@@ -29,6 +31,27 @@ def main():
     # items = manager.batch_to_items()
 
     # print(items)
+    #
 
+    manager = GWManager.from_token(TokenConfig.load("../pear-proxy/genius_project/token.json"))
+
+    await manager.websocket.initiate()
+
+    test_payload = {
+        "id": "something",
+        "type": "socket_pagination_request",
+        "search_prompt": "I want to make a new project for manipulating the stock market using builtin python libraries.",
+        "events": [],
+        "batch_count": 3
+    }
+
+    output = await manager.websocket.send_json(test_payload)
+    print(type(output))
+
+    jsoned = json.loads(output)
+
+    tools = [json.loads(tool["product"]["body"]) for tool in jsoned["cards"]]
+
+    print([tool["name"] for tool in tools])
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
