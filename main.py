@@ -1,4 +1,4 @@
-from remoras.manager2 import GWManager
+from remoras.manager import GWManager
 from remoras.structs import WebsocketPayload, Event, TokenConfig, BasicAuth, ProjectConfig, FeedPayload
 import json
 from dotenv import load_dotenv
