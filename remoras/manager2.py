@@ -305,27 +305,85 @@ class DataManager:
     
     
 class WebSocketManager:
-    def __init__(self, manager:GWManager):
+    def __init__(self, manager:GWManager, timeout:int = 60):
+        """Websocket managing interface. Pass a reference to the controlling manager
+        and establish a `timeout` to determine when to call the ping method"""
         self.manager = manager
         self.socket:ClientConnection = None
         self.socket_endpoint = f"{ENDPOINT}/ws/platform/feed/{self.manager.token_config.project_name}/{VISITOR}"
         self.socket_endpoint = self.socket_endpoint.replace("https", "wss")
 
-    async def initiate(self):
-        self._active_session = str(uuid4())
-        self.socket = await connect(f"{self.socket_endpoint}/{self._active_session}")
+        self._ping_timeout = timeout
+
+    async def _ping_job(self):
+        await asyncio.sleep(self._ping_timeout)
+        await self.send_ping()
         
+    def _convert_cards(self, socket_response:str) -> list[dict]:
+        """Convert the slightly annoying product card format into the more easily usable item format
+
+        We are given:
+        {
+            "cards": [
+                {
+                    "type",
+                    "id",
+                    "source_id",
+                    "layout_state",
+                    "product": {
+                        "sku" (same as id),
+                        "body" (This field contains the description field from PG, leave this alone so that users can manipulate as they see fit)
+                    }
+                }
+            ]
+
+            if users need more information on the product they can call the items.get(id) to recieve
+        }
+        """
+        try:
+            cards = json.loads(socket_response)
+            cards = cards['cards']
+
+            cards = [{**card, "product": {**card['product'], 'body': card['product']['body']}} for card in cards]
+
+            # the `id` field is useful for sending metrics back, `name` can be helpful for debug, and `description` contains the tool signature
+            return [{'id': card['product']['sku'], 'body': card['product']['body']} for card in cards]
+        except json.JSONDecodeError:
+            return socket_response
+
+    async def initiate(self):
+        """Create a websocket instance between client and PG"""
+        self._active_session = str(uuid4())
+        self.socket = await connect(f"{self.socket_endpoint}/{self._active_session}", ping_timeout=None)
+        
+        # Create the ping task to keep our socket alive for the forseeable future
+        self._ping_task = asyncio.ensure_future(self._ping_job())
+
+    def _cancel_ping(self):
+        self._ping_task.cancel()
+
     async def send_message(self, message:str):
+        """Simple message sending"""
         if not self.socket:
             return
 
         await self.socket.send(message)
 
-    async def send_json(self, payload:dict):
-        if not self.socket:
-            return
-
-        await self.socket.send(json.dumps(payload))
-
-
         return await self.socket.recv()
+
+    async def send_json(self, payload:dict, convert_cards=True):
+        """Wrapper around the send_message function to send dictionary/json payloads
+
+        convert_cards will call `self._convert_cards` on the returned data to simplify the datastructure before
+        use. By default this is **ON**
+        """
+        response = await self.send_message(json.dumps(payload))
+
+        if convert_cards:
+            return self._convert_cards(response)
+
+        return response
+
+    async def send_ping(self):
+        """Ping command to keep our connection alive"""
+        return await self.send_json({"type": "ping"})
