@@ -312,7 +312,6 @@ class WebSocketManager:
         self.socket:ClientConnection = None
         self.visitor = visitor
         self.project_name = self.manager.project_config.project_name if self.manager.project_config else self.manager.token_config.project_name
-        self.socket_endpoint = self.socket_endpoint.replace("https", "wss")
 
         self._ping_timeout = timeout
 
@@ -324,7 +323,8 @@ class WebSocketManager:
         self.visitor = visitor
 
     def _get_endpoint(self):
-        return f"{ENDPOINT}/ws/platform/feed/{self.project_name}/{self.visitor}"
+        wss = ENDPOINT.replace("https", "wss")
+        return f"{wss}/ws/platform/feed/{self.project_name}/{self.visitor}"
     
     def _convert_cards(self, socket_response:str) -> list[dict]:
         """Convert the slightly annoying product card format into the more easily usable item format
