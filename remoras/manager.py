@@ -14,7 +14,6 @@ from .data_validation import validate_items, validate_policies
 from .utils import load_obj_or_path
 
 ENDPOINT = "https://app.productgenius.io"
-VISITOR = "carl-11" # Test value for utilizing the visitor id of PG websocket API
 
 
 class GWManager:
@@ -22,7 +21,8 @@ class GWManager:
         basic_auth:BasicAuth = None,
         project_config:ProjectConfig = None,
         token_config:TokenConfig = None,
-        project_dir:str = "genius_project"
+        project_dir:str = "genius_project",
+        visitor:str = "DEFAULT"
     ):
         assert (basic_auth and project_config) or token_config, "To manage a project you must pass either token_config, or (basic_auth, and project_config)"
         assert not (basic_auth and project_config and token_config), "Do not pass all three `basic_auth`, `token_config` and `project_config`. Either `token_config`, or (`basic_auth` and `project_config`)"
@@ -37,7 +37,7 @@ class GWManager:
         self.policies = PolicyManager(self)
         self.models = ModelManager(self)
         self.data = DataManager(self)
-        self.websocket = WebSocketManager(self)
+        self.websocket = WebSocketManager(self, visitor=visitor)
         
 
     @classmethod
@@ -305,13 +305,13 @@ class DataManager:
     
     
 class WebSocketManager:
-    def __init__(self, manager:GWManager, timeout:int = 60):
+    def __init__(self, manager:GWManager, timeout:int = 60, visitor:str = "DEFAULT"):
         """Websocket managing interface. Pass a reference to the controlling manager
         and establish a `timeout` to determine when to call the ping method"""
         self.manager = manager
         self.socket:ClientConnection = None
+        self.visitor = visitor
         self.project_name = self.manager.project_config.project_name if self.manager.project_config else self.manager.token_config.project_name
-        self.socket_endpoint = f"{ENDPOINT}/ws/platform/feed/{self.project_name}/{VISITOR}"
         self.socket_endpoint = self.socket_endpoint.replace("https", "wss")
 
         self._ping_timeout = timeout
@@ -320,6 +320,12 @@ class WebSocketManager:
         await asyncio.sleep(self._ping_timeout)
         await self.send_ping()
         
+    def set_visitor(self, visitor):
+        self.visitor = visitor
+
+    def _get_endpoint(self):
+        return f"{ENDPOINT}/ws/platform/feed/{self.project_name}/{self.visitor}"
+    
     def _convert_cards(self, socket_response:str) -> list[dict]:
         """Convert the slightly annoying product card format into the more easily usable item format
 
@@ -355,7 +361,7 @@ class WebSocketManager:
     async def initiate(self):
         """Create a websocket instance between client and PG"""
         self._active_session = str(uuid4())
-        self.socket = await connect(f"{self.socket_endpoint}/{self._active_session}", ping_timeout=None)
+        self.socket = await connect(f"{self._get_endpoint()}/{self._active_session}", ping_timeout=None)
         
         # Create the ping task to keep our socket alive for the forseeable future
         self._ping_task = asyncio.ensure_future(self._ping_job())
